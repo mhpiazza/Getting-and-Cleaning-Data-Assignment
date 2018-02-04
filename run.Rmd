@@ -1,0 +1,197 @@
+---
+title: "run_analysis.R Codebook"
+author: "Michelle Piazza"
+date: "February 4, 2018"
+output: html_document
+---
+## Project Description
+The purpose of this project is to demonstrate an ability to collect, work with, and clean a data set. The goal is to prepare tidy data that can be used for later analysis. 
+
+##Study design and data processing
+Data from the "Human Activity Recognition Using Smartphones Data Set" was used for this project.
+
+###Collection of the raw data
+Thirty subjects, ages 19-48 years, performed 6 activities (WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING) wearing a smartphone (Samsung Galaxy S II) on the waist. 561 features were recorded via the smartphone.
+
+###Notes on the original (raw) data 
+The data for the project can be found here:
+
+https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
+
+ 
+##Creating the tidy datafile
+
+###Guide to create the tidy data file
+1. create source directory if it does not already exist
+```{r}
+old.dir<-getwd()
+if(!file.exists("./data")){dir.create("./data")}
+```
+2, download the zip file to the target directory
+```{r}
+datasetUrl<-"https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+download.file(datasetUrl,destfile = "./data/dataset.zip",mode="wb")
+```
+3. unzip the dataset
+```{r}
+unzip("./data/dataset.zip",exdir = "./data")
+```
+4. move to directory containing the dataset
+```{r}
+setwd("./data/UCI HAR Dataset")
+```
+
+###Cleaning of the data
+1. Load the 8 text files using the read.table command
+```{r}
+activitylabel <- read.table("activity_labels.txt") ##there are 6 rows
+featureslist <- read.table("features.txt")  ##there are 561 rows
+testactivity<-read.table("./test/y_test.txt")  ##there are 2947 rows
+trainingactivity<-read.table("./train/y_train.txt")  ##there are 7352 rows
+testset<-read.table("./test/X_test.txt")  ##there are 2947 rows
+trainingset<-read.table("./train/X_train.txt") ##there are 7352 rows
+testsubject<-read.table("./test/subject_test.txt")    ##there are 2947 rows
+trainingsubject<-read.table("./train/subject_train.txt") ##there are 7352 rows
+```
+2. combine the analagous data sets together via rbind()
+   a. labels = activity
+   b. sets = features
+   c. subject = identifies the subjects
+```{r}
+activities <- rbind(testactivity,trainingactivity)  ##there are 10299 rows
+features <- rbind(testset,trainingset)              ##there are 10299 rows
+subjects <- rbind(testsubject,trainingsubject)      ##there are 10299 rows
+```
+3. convert the activity labels to readable factors
+```{r}
+activities$V1 <- factor(activities$V1, levels = activitylabel$V1, labels = activitylabel$V2)
+
+```
+4. give headers to the 3 data sets
+```{r}
+names(activities) <- "activity"
+names(subjects) <- "subject"
+names(features) <- featureslist$V2
+```
+5. find and subset the "mean" and "standard deviation" features
+```{r}
+featureswithmeanstddev <- as.character(featureslist$V2[grep("mean\\(\\)|std\\(\\)", featureslist$V2)])
+featuressubset <- subset(features,select=featureswithmeanstddev)  ##length = 66, rows 10299
+
+```
+6. combine the subsetted data with the subjects and activites
+```{r}
+subjectbyactivity <- cbind(subjects, activities) ##10299 rows, 2 columns
+combinedata <- cbind(featuressubset,subjectbyactivity)  ##10299 rows, 68 columns
+```
+7. then get the mean values for the variables by subject and activity
+```{r `warning = FALSE` }
+by1 <- combinedata$subject
+by2 <- combinedata$activity
+tidydata <- aggregate(x=combinedata, by = list(by1, by2), FUN = "mean",drop=TRUE)  ##180 rows,70 cols
+
+```
+8. clean up up the headers
+```{r}
+colnames(tidydata)[1:2] <- c("subject","activity")
+colnames(tidydata)[3:68] <- gsub("^t","time",colnames(tidydata)[3:68])
+colnames(tidydata)[3:68] <- gsub("^f","frequency",colnames(tidydata)[3:68])
+colnames(tidydata)[3:68] <- sub("\\-mean\\(\\)\\-","Mean",colnames(tidydata)[3:68])
+colnames(tidydata)[3:68] <- sub("\\-mean\\(\\)","Mean",colnames(tidydata)[3:68])
+colnames(tidydata)[3:68] <- sub("\\-std\\(\\)\\-","Std",colnames(tidydata)[3:68])
+colnames(tidydata)[3:68] <- sub("\\-std\\(\\)","Std",colnames(tidydata)[3:68])
+tidydata<-tidydata[1:68] ##180 rows,68 cols
+```
+9. write out the tidy data
+```{r}
+setwd(old.dir)
+write.table(tidydata, file='./data/tidydata.txt')
+```
+
+##Description of the variables in the tiny_data.txt file
+The resultant tidydatafinal dataset:
+ - Dimensions: 180 rows by 68 cols 
+ - It contains the average of each variable for each activity and each subject.
+ - Variables names are formatted in camelCase.
+ - Examples of renamed variables
+ 
+   "V1"                 became "activities" 
+   "tBodyAcc-mean()-X"  became "timeBodyAccMeanX"
+   "fBodyAcc-std()-Y"   became "frequencyBodyAccStdY"
+
+### Renamed Variables
+- subject
+- activity
+- timeBodyAccMeanX
+- timeBodyAccMeanY
+- timeBodyAccMeanZ
+- timeBodyAccStdX
+- timeBodyAccStdY
+- timeBodyAccStdZ
+- timeGravityAccMeanX
+- timeGravityAccMeanY
+- timeGravityAccMeanZ
+- timeGravityAccStdX
+- timeGravityAccStdY
+- timeGravityAccStdZ
+- timeBodyAccJerkMeanX
+- timeBodyAccJerkMeanY
+- timeBodyAccJerkMeanZ
+- timeBodyAccJerkStdX
+- timeBodyAccJerkStdY
+- timeBodyAccJerkStdZ
+- timeBodyGyroMeanX
+- timeBodyGyroMeanY
+- timeBodyGyroMeanZ
+- timeBodyGyroStdX
+- timeBodyGyroStdY
+- timeBodyGyroStdZ
+- timeBodyGyroJerkMeanX
+- timeBodyGyroJerkMeanY
+- timeBodyGyroJerkMeanZ
+- timeBodyGyroJerkStdX
+- timeBodyGyroJerkStdY
+- timeBodyGyroJerkStdZ
+- timeBodyAccMagMean
+- timeBodyAccMagStd
+- timeGravityAccMagMean
+- timeGravityAccMagStd
+- timeBodyAccJerkMagMean
+- timeBodyAccJerkMagStd
+- timeBodyGyroMagMean
+- timeBodyGyroMagStd
+- timeBodyGyroJerkMagMean
+- timeBodyGyroJerkMagStd
+- frequencyBodyAccMeanX
+- frequencyBodyAccMeanY
+- frequencyBodyAccMeanZ
+- frequencyBodyAccStdX
+- frequencyBodyAccStdY
+- frequencyBodyAccStdZ
+- frequencyBodyAccJerkMeanX
+- frequencyBodyAccJerkMeanY
+- frequencyBodyAccJerkMeanZ
+- frequencyBodyAccJerkStdX
+- frequencyBodyAccJerkStdY
+- frequencyBodyAccJerkStdZ
+- frequencyBodyGyroMeanX
+- frequencyBodyGyroMeanY
+- frequencyBodyGyroMeanZ
+- frequencyBodyGyroStdX
+- frequencyBodyGyroStdY
+- frequencyBodyGyroStdZ
+- frequencyBodyAccMagMean
+- frequencyBodyAccMagStd
+- frequencyBodyBodyAccJerkMagMean
+- frequencyBodyBodyAccJerkMagStd
+- frequencyBodyBodyGyroMagMean
+- frequencyBodyBodyGyroMagStd
+- frequencyBodyBodyGyroJerkMagMean
+- frequencyBodyBodyGyroJerkMagStd
+
+A full description of the above data can be found here: 
+http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+
+##Sources
+Google and the Class Forums were of great assistance.
+
