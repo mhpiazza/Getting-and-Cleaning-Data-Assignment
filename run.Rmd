@@ -115,8 +115,8 @@ The resultant tidydatafinal dataset:
  - Variables names are formatted in camelCase.
  - Examples of renamed variables
  
-   "V1"                 became "activities" 
-   "tBodyAcc-mean()-X"  became "timeBodyAccMeanX"
+   "V1"                 became "activities" ;
+   "tBodyAcc-mean()-X"  became "timeBodyAccMeanX" ;
    "fBodyAcc-std()-Y"   became "frequencyBodyAccStdY"
 
 ### Renamed Variables
