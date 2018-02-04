@@ -81,5 +81,5 @@ tidydata<-tidydata[1:68] ##180 rows,68 cols
 
 ##now write to file in the data directory
 setwd(old.dir)
-write.table(tidydata, file='./data/tidydata.txt')
+write.table(tidydata, file='./data/tidydata.txt', row.name=FALSE)
 
